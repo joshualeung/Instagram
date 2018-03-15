@@ -135,6 +135,6 @@ class InstagramSpider(CrawlSpider):
         has_next_page = user['edge_owner_to_timeline_media']['page_info']['has_next_page']
         #
         if has_next_page:
-            last_id = user['edge_owner_to_timeline_media']['edges'][-1]['id']
+            last_id = user['edge_owner_to_timeline_media']['edges'][-1]['node']['id']
             url = "https://www.instagram.com/"+ user_name + "?max_id=" + last_id
             yield scrapy.Request(url, callback=self.parse)
