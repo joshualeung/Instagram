@@ -9,6 +9,7 @@ sys.path.append("../../")
 from Instagram.items import InstagramItem
 from scrapy.spiders import CrawlSpider,Rule
 import re
+import time
 
 class InstagramSpider(CrawlSpider):
     #define the name of spider
@@ -17,7 +18,8 @@ class InstagramSpider(CrawlSpider):
     name = "Instagram"
     allowed_domains = ["instagram.com"]
     start_urls = [
-        "https://www.instagram.com/hxmfamily/"
+        "https://www.instagram.com/hxmfamily/",
+        "https://www.instagram.com/caitylotz/"
                     #"https://www.instagram.com/nike",
                   #"https://www.instagram.com/adidas",
                   #"https://www.instagram.com/olympics/",
@@ -105,8 +107,9 @@ class InstagramSpider(CrawlSpider):
         js = response.selector.xpath('//script[contains(., "window._sharedData")]/text()').extract()
         js = js[0].replace("window._sharedData = ", "")
         jscleaned = js[:-1]
-
+        ts = str(int(time.time()))
         data = json.loads(jscleaned)
+        open(ts + ".json", "w").write(json.dumps(data))
         user = data['entry_data']['ProfilePage'][0]['graphql']['user']
         user_name = user['username']
         for edge in user['edge_owner_to_timeline_media']['edges']:
