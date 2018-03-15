@@ -105,23 +105,33 @@ class InstagramSpider(CrawlSpider):
         js = response.selector.xpath('//script[contains(., "window._sharedData")]/text()').extract()
         js = js[0].replace("window._sharedData = ", "")
         jscleaned = js[:-1]
-        open("debug.html", "w").write(json.dumps(jscleaned))
-        # Load it as a json object
-        locations = json.loads(jscleaned)
-        # We check if there is a next page
-        user = locations['entry_data']['ProfilePage'][0]['user']
-        has_next = user['media']['page_info']['has_next_page']
-        media = user['media']['nodes']
 
-        # We parse the photos
-        for photo in media:
-            url = photo['display_src']
-            item['image_urls'] = [url]
-            item['id'] = [photo['id']]
-            items.append(item)
+        data = json.loads(jscleaned)
+        user = data['entry_data']['ProfilePage'][0]['graphql']['user']
+        user_name = user['username']
+        for edge in user['edge_owner_to_timeline_media']['edges']:
+            # print(edge.keys())
+            node = edge['node']
+            display_url = node['display_url']
+            is_video = node['is_video']
+            taken_at = node['taken_at_timestamp']
+            dim = node['dimensions']
+            ch = dim['height']
+            cw = dim['width']
+            id = node['id']
+            item = {
+                'username': user_name,
+                'image_url': display_url,
+                'is_video': is_video,
+                'taken_at': taken_at,
+                'ch': ch,
+                'cw': cw,
+                'id': id
+            }
             yield item
 
-        if has_next:
-            account = re.split('/*', response.url)[2]
-            url = "https://www.instagram.com/"+ account + "?max_id=" + media[-1]['id']
-            yield scrapy.Request(url, callback=self.parse,meta={"proxy":"https://127.0.0.1:1080"})
+        #
+        # if has_next:
+        #     account = re.split('/*', response.url)[2]
+        #     url = "https://www.instagram.com/"+ account + "?max_id=" + media[-1]['id']
+        #     yield scrapy.Request(url, callback=self.parse,meta={"proxy":"https://127.0.0.1:1080"})
