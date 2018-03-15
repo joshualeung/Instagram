@@ -4,7 +4,9 @@
 
 import scrapy
 import json
-from ..items import InstagramItem
+import sys
+sys.path.append("../../")
+from Instagram.items import InstagramItem
 from scrapy.spiders import CrawlSpider,Rule
 import re
 
@@ -14,7 +16,9 @@ class InstagramSpider(CrawlSpider):
     #define the urls
     name = "Instagram"
     allowed_domains = ["instagram.com"]
-    start_urls = [#"https://www.instagram.com/nike",
+    start_urls = [
+        "https://www.instagram.com/hxmfamily/"
+                    #"https://www.instagram.com/nike",
                   #"https://www.instagram.com/adidas",
                   #"https://www.instagram.com/olympics/",
                   #"https://www.instagram.com/teamcanada/",
@@ -101,7 +105,7 @@ class InstagramSpider(CrawlSpider):
         js = response.selector.xpath('//script[contains(., "window._sharedData")]/text()').extract()
         js = js[0].replace("window._sharedData = ", "")
         jscleaned = js[:-1]
-
+        open("debug.html", "w").write(json.dumps(jscleaned))
         # Load it as a json object
         locations = json.loads(jscleaned)
         # We check if there is a next page
