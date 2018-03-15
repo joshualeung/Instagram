@@ -132,9 +132,25 @@ class InstagramSpider(CrawlSpider):
                 'id': id
             }
             yield item
+            if is_video:
+                url = "https://www.instagram.com/p/%s/?__a=1" % node['shortcode']
+                yield scrapy.Request(url, callback=self.parse_media)
+
         has_next_page = user['edge_owner_to_timeline_media']['page_info']['has_next_page']
         #
         if has_next_page:
             last_id = user['edge_owner_to_timeline_media']['edges'][-1]['node']['id']
             url = "https://www.instagram.com/"+ user_name + "?max_id=" + last_id
             yield scrapy.Request(url, callback=self.parse)
+
+    def parse_media(selfself, response):
+        data = json.loads(response.text)
+        media = data['graphql']['shortcode_media']
+        id = media['id']
+        shortcode = media['shortcode']
+        video_url = media['video_url']
+        yield {
+            'id': id,
+            'shortcode': shortcode,
+            'video_url': video_url
+        }
