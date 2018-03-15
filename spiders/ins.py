@@ -132,9 +132,9 @@ class InstagramSpider(CrawlSpider):
                 'id': id
             }
             yield item
-
+        has_next_page = user['edge_owner_to_timeline_media']['page_info']['has_next_page']
         #
-        # if has_next:
-        #     account = re.split('/*', response.url)[2]
-        #     url = "https://www.instagram.com/"+ account + "?max_id=" + media[-1]['id']
-        #     yield scrapy.Request(url, callback=self.parse,meta={"proxy":"https://127.0.0.1:1080"})
+        if has_next_page:
+            last_id = user['edge_owner_to_timeline_media']['edges'][-1]['id']
+            url = "https://www.instagram.com/"+ user_name + "?max_id=" + last_id
+            yield scrapy.Request(url, callback=self.parse)
