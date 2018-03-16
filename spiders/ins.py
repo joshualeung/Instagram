@@ -10,6 +10,7 @@ from Instagram.items import InstagramItem
 from scrapy.spiders import CrawlSpider,Rule
 import re
 import time
+from urllib import parse
 
 class InstagramSpider(CrawlSpider):
     #define the name of spider
@@ -139,11 +140,65 @@ class InstagramSpider(CrawlSpider):
         has_next_page = user['edge_owner_to_timeline_media']['page_info']['has_next_page']
         #
         if has_next_page:
-            last_id = user['edge_owner_to_timeline_media']['edges'][-1]['node']['id']
-            url = "https://www.instagram.com/"+ user_name + "?max_id=" + last_id
-            yield scrapy.Request(url, callback=self.parse)
+            query_hash = "472f257a40c653c64c666ce877d59d2b"
+            end_cursor = user['edge_owner_to_timeline_media']['page_info']['end_cursor']
+            first = 12
+            params = {
+                'query_hash': query_hash,
+                'variables': {
+                    'id': user_name,
+                    'first': 12,
+                    'after': end_cursor
+                }
+            }
+            url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
+            yield scrapy.Request(url, callback=self.parse_next, meta = {'user_name': user_name})
 
-    def parse_media(selfself, response):
+    def parse_next(self, response):
+        data = json.loads(response.text)
+        user_name = response.meta['user_name']
+        timeline_media = data['data']['user']['edge_owner_to_timeline_media']
+        for edge in timeline_media['edges']:
+            node = edge['node']
+            display_url = node['display_url']
+            is_video = node['is_video']
+            taken_at = node['taken_at_timestamp']
+            dim = node['dimensions']
+            ch = dim['height']
+            cw = dim['width']
+            id = node['id']
+            item = {
+                'username': user_name,
+                'image_url': display_url,
+                'is_video': is_video,
+                'taken_at': taken_at,
+                'ch': ch,
+                'cw': cw,
+                'id': id
+            }
+            yield item
+            if is_video:
+                url = "https://www.instagram.com/p/%s/?__a=1" % node['shortcode']
+                yield scrapy.Request(url, callback=self.parse_media)
+
+
+        has_next_page = timeline_media['page_info']['has_next_page']
+        if has_next_page:
+            query_hash = "472f257a40c653c64c666ce877d59d2b"
+            end_cursor = timeline_media['page_info']['end_cursor']
+            first = 12
+            params = {
+                'query_hash': query_hash,
+                'variables': {
+                    'id': user_name,
+                    'first': 12,
+                    'after': end_cursor
+                }
+            }
+            url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
+            yield scrapy.Request(url, callback=self.parse_next)
+
+    def parse_media(self, response):
         data = json.loads(response.text)
         media = data['graphql']['shortcode_media']
         id = media['id']
