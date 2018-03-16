@@ -13,6 +13,8 @@ import time
 from urllib import parse
 import traceback
 
+sleep_secs = 2
+
 class InstagramSpider(CrawlSpider):
     name = "Instagram"
     allowed_domains = ["instagram.com"]
@@ -77,7 +79,7 @@ class InstagramSpider(CrawlSpider):
             # }
             # url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
             # yield scrapy.Request(url, callback=self.parse_next, meta = {'id': user_id, 'username': username})
-            time.sleep(1)
+            time.sleep(sleep_secs)
             yield self.start_next_page(user_id, end_cursor, meta = {'id': user_id, 'username': username})
 
     def start_next_page(self, user_id, end_cursor, meta):
@@ -103,15 +105,6 @@ class InstagramSpider(CrawlSpider):
             ch = dim['height']
             cw = dim['width']
             id = node['id']
-            # item = {
-            #     'username': username,
-            #     'image_url': display_url,
-            #     'is_video': is_video,
-            #     'taken_at': taken_at,
-            #     'ch': ch,
-            #     'cw': cw,
-            #     'id': id
-            # }
             try:
                 texts = [edge['node']['text'] for edge in node["edge_media_to_caption"]["edges"]]
                 text = "\n".join(texts)
@@ -131,22 +124,17 @@ class InstagramSpider(CrawlSpider):
             yield item
             if is_video:
                 url = "https://www.instagram.com/p/%s/?__a=1" % node['shortcode']
-                yield scrapy.Request(url, callback=self.parse_video)
+                yield scrapy.Request(url, callback=self.parse_video, meta = {
+                    "user_name": username,
+                    "user_id": user_id
+                })
 
 
         has_next_page = timeline_media['page_info']['has_next_page']
         if has_next_page:
-            #query_hash = "472f257a40c653c64c666ce877d59d2b"
             end_cursor = timeline_media['page_info']['end_cursor']
-            time.sleep(0.5)
+            time.sleep(sleep_secs)
             yield self.start_next_page(user_id, end_cursor, response.meta)
-            # first = 12
-            # params = {
-            #     'query_hash': query_hash,
-            #     'variables': '{"id":"%s","first":12,"after":"%s"}' % (user_id, end_cursor)
-            # }
-            # url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
-            # yield scrapy.Request(url, callback=self.parse_next, meta = {'id': user_id, 'username': user_name})
 
     def parse_video(self, response):
         """
