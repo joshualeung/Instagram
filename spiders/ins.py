@@ -78,7 +78,7 @@ class InstagramSpider(CrawlSpider):
             # url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
             # yield scrapy.Request(url, callback=self.parse_next, meta = {'id': user_id, 'username': username})
             time.sleep(1)
-            return self.start_next_page(user_id, end_cursor, meta = {'id': user_id, 'username': username})
+            yield self.start_next_page(user_id, end_cursor, meta = {'id': user_id, 'username': username})
 
     def start_next_page(self, user_id, end_cursor, meta):
         query_hash = "472f257a40c653c64c666ce877d59d2b"
@@ -87,7 +87,7 @@ class InstagramSpider(CrawlSpider):
             'variables': '{"id":"%s","first":12,"after":"%s"}' % (user_id, end_cursor)
         }
         url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
-        yield scrapy.Request(url, callback=self.parse_next, meta = meta)
+        return scrapy.Request(url, callback=self.parse_next, meta = meta)
 
     def parse_next(self, response):
         data = json.loads(response.text)
@@ -139,7 +139,7 @@ class InstagramSpider(CrawlSpider):
             #query_hash = "472f257a40c653c64c666ce877d59d2b"
             end_cursor = timeline_media['page_info']['end_cursor']
             time.sleep(0.5)
-            return self.start_next_page(user_id, end_cursor, response.meta)
+            yield self.start_next_page(user_id, end_cursor, response.meta)
             # first = 12
             # params = {
             #     'query_hash': query_hash,
