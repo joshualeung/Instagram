@@ -139,24 +139,22 @@ class InstagramSpider(CrawlSpider):
 
         has_next_page = user['edge_owner_to_timeline_media']['page_info']['has_next_page']
         #
+        user_id = user['id']
         if has_next_page:
             query_hash = "472f257a40c653c64c666ce877d59d2b"
             end_cursor = user['edge_owner_to_timeline_media']['page_info']['end_cursor']
             first = 12
             params = {
                 'query_hash': query_hash,
-                'variables': {
-                    'id': user_name,
-                    'first': 12,
-                    'after': end_cursor
-                }
+                'variables': '{"id":"%s","first":12,"after":"%s"}' % (user_id, end_cursor)
             }
             url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
-            yield scrapy.Request(url, callback=self.parse_next, meta = {'user_name': user_name})
+            yield scrapy.Request(url, callback=self.parse_next, meta = {'id': user_id, 'username': user_name})
 
     def parse_next(self, response):
         data = json.loads(response.text)
-        user_name = response.meta['user_name']
+        user_id = response.meta['id']
+        user_name = response.meta['username']
         timeline_media = data['data']['user']['edge_owner_to_timeline_media']
         for edge in timeline_media['edges']:
             node = edge['node']
@@ -189,14 +187,10 @@ class InstagramSpider(CrawlSpider):
             first = 12
             params = {
                 'query_hash': query_hash,
-                'variables': {
-                    'id': user_name,
-                    'first': 12,
-                    'after': end_cursor
-                }
+                'variables': '{"id":"%s","first":12,"after":"%s"}' % (user_id, end_cursor)
             }
             url = "https://www.instagram.com/graphql/query/?" + parse.urlencode(params)
-            yield scrapy.Request(url, callback=self.parse_next)
+            yield scrapy.Request(url, callback=self.parse_next, meta = {'id': user_id, 'username': user_name})
 
     def parse_media(self, response):
         data = json.loads(response.text)
